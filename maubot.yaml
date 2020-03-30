@@ -1,0 +1,14 @@
+id: de.saces.maugitea
+version: 0.0.1
+modules:
+- gitea_matrix
+main_class: GiteaBot
+maubot: 0.1.0
+database: false
+config: false
+webapp: false
+license: AGPL-3.0-or-later
+extra_files:
+- base-config.yaml
+dependencies: []
+soft_dependencies: []
