@@ -4,8 +4,7 @@ modules:
 - gitea_matrix
 main_class: GiteaBot
 maubot: 0.1.0
-database: false
-config: false
+database: true
 webapp: false
 license: AGPL-3.0-or-later
 extra_files:
