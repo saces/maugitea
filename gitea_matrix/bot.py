@@ -15,7 +15,10 @@
 from typing import Set, Type
 
 from aiohttp.web import Response, Request
+from yarl import URL
+
 import giteapy
+from giteapy import Configuration as Gtc
 
 from maubot import Plugin, MessageEvent
 from maubot.handlers import command, event, web
@@ -24,7 +27,7 @@ from mautrix.util.config import BaseProxyConfig
 
 from .db import Database
 from .config import Config
-from .util import UrlOrAliasArgument
+from .util import UrlOrAliasArgument, with_gitea_session
 
 from pprint import pprint
 
@@ -78,8 +81,13 @@ class GiteaBot(Plugin):
         await evt.reply("Pong")
 
     @gitea.subcommand("whoami", help="Check who you're logged in as.")
-    async def whoami(self, evt: MessageEvent) -> None:
-        await evt.reply(f"Not implementet yeeet.")
+    @UrlOrAliasArgument("url", "server URL or alias")
+    @with_gitea_session
+    async def whoami(self, evt: MessageEvent, gtc: Gtc) -> None:
+        api_instance = giteapy.UserApi(giteapy.ApiClient(gtc))
+        api_response = api_instance.user_get_current()
+        await evt.reply(f"You're logged into {URL(gtc.host).host} as "
+                        f"{api_response.login}")
 
     # endregion
 

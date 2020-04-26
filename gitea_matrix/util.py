@@ -21,7 +21,7 @@ from giteapy.rest import ApiException
 from maubot import MessageEvent
 from maubot.handlers.command import Argument
 
-from .db import AuthInfo, DefaultRepoInfo
+from .db import AuthInfo
 
 from pprint import pprint
 
@@ -39,3 +39,23 @@ class UrlOrAliasArgument(Argument):
         if serverurl:
             return " ".join(vals[1:]), serverurl
         return " ".join(vals[1:]), vals[0]
+
+
+Decoratable = Callable[['GiteaBot', MessageEvent, Gtc, Any], Any]
+Decorator = Callable[['GiteaBot', MessageEvent, AuthInfo, Any], Any]
+
+def with_gitea_session(func: Decoratable) -> Decorator:
+    async def wrapper(self, evt: MessageEvent, url: str, **kwargs) -> Any:
+        try:
+            aInfo = self.db.get_login(evt.sender, url)
+            gtc = giteapy.Configuration()
+            gtc.host = aInfo.server
+            gtc.api_key['access_token'] = aInfo.api_token
+            return await func(self, evt, gtc=gtc, **kwargs)
+        except ApiException as e:
+            await evt.reply("Api Error.\n\n{0}".format(e))
+        except Exception as e:
+            self.log.error("Failed to handle command", exc_info=True)
+            await evt.reply("Error.\n\n{0}".format(e))
+
+    return wrapper

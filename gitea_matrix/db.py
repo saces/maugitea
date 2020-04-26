@@ -93,3 +93,8 @@ class Database:
         token = s.query(ServerToken).get((mxid, url))
         s.delete(token)
         s.commit()
+
+    def get_login(self, mxid: UserID, url: str) -> AuthInfo:
+        s = self.Session()
+        row = s.query(ServerToken).filter(ServerToken.user_id == mxid, ServerToken.gitea_server == url).one()
+        return AuthInfo(server=row.gitea_server, api_token=row.api_token)
