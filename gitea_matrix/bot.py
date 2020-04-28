@@ -12,9 +12,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Set, Type
+from typing import List, Set, Type
 
 from aiohttp.web import Response, Request
+import asyncio
+from asyncio import Task
+
 from yarl import URL
 
 import giteapy
@@ -22,7 +25,7 @@ from giteapy import Configuration as Gtc
 
 from maubot import Plugin, MessageEvent
 from maubot.handlers import command, event, web
-from mautrix.types import EventType, Membership, RoomID, StateEvent
+from mautrix.types import EventType, Membership, MessageType, RoomID, StateEvent
 from mautrix.util.config import BaseProxyConfig
 
 from .db import Database
@@ -31,8 +34,9 @@ from .util import UrlOrAliasArgument, with_gitea_session
 
 from pprint import pprint
 
-class GiteaBot(Plugin):
 
+class GiteaBot(Plugin):
+    task_list: List[Task]
     joined_rooms: Set[RoomID]
 
     async def start(self) -> None:
@@ -40,6 +44,11 @@ class GiteaBot(Plugin):
         self.config.load_and_update()
         self.db = Database(self.database)
         self.joined_rooms = set(await self.client.get_joined_rooms())
+        self.task_list = []
+
+    async def stop(self) -> None:
+        if self.task_list:
+            await asyncio.wait(self.task_list, timeout=1)
 
     @classmethod
     def get_config_class(cls) -> Type[BaseProxyConfig]:
@@ -64,8 +73,63 @@ class GiteaBot(Plugin):
 
     @web.post("/webhook/r0")
     async def post_handler(self, request: Request) -> Response:
-        pprint(request)
-        return Response(text="501: Not implemented yeeet.\n", status=501)
+        if "X-Gitea-Event" not in request.headers:
+            return Response(text="400: Bad request\n"
+                                 "Event type not specified\n", status=400)
+        if "X-Gitea-Delivery" not in request.headers:
+            return Response(text="400: Bad request\n"
+                                 "Missing delivery token header\n", status=401)
+        if "X-Gitea-Signature" not in request.headers:
+            return Response(text="400: Ba request\n"
+                                 "Missing signature header\n", status=401)
+
+        if "room" not in request.query:
+            return Response(text="400: Bad request\n"
+                                 "No room specified. Did you forget the '?room=' query parameter?\n",
+                            status=400)
+
+        if request.query["room"] not in self.joined_rooms:
+            return Response(text="403: Forbidden\nThe bot is not in the room. "
+                                 f"Please invite the bot to the room.\n", status=403)
+
+        if request.headers.getone("Content-Type", "") != "application/json":
+            return Response(status=406, text="406: Not Acceptable\n",
+                            headers={"Accept": "application/json"})
+
+        if not request.can_read_body:
+            return Response(status=400, text="400: Bad request\n"
+                                             "Missing request body\n")
+
+        task = self.loop.create_task(self.process_hook_01(request))
+        self.task_list += [task]
+        return Response(status=202, text="202: Accepted\nWebhook processing started.\n")
+
+    async def process_hook_01(self, req: Request) -> None:
+        if self.config["send_as_notice"]:
+            msgtype = MessageType.NOTICE
+        else:
+            msgtype = MessageType.TEXT
+
+        try:
+            body = await req.json()
+
+            if body["secret"] != self.config["webhook-secret"]:
+                self.log.error("Failed to handle Gitea event: secret doasnt match.")
+            else:
+                self.log.error("Failed to handle Gitea event: secret match.")
+
+                room_id = RoomID(req.query["room"])
+
+                event_id = await self.client.send_markdown(room_id, "Hier könnte ihre Werbung stehen",
+                                                                allow_html=True,
+                                                                msgtype=msgtype)
+
+        except Exception:
+            self.log.error("Failed to handle Gitea event", exc_info=True)
+
+        task = asyncio.current_task()
+        if task:
+            self.task_list.remove(task)
 
     # endregion
 
