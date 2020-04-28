@@ -62,7 +62,7 @@ class GiteaBot(Plugin):
 
     # region Webhook handling
 
-    @web.post("/webhooks")
+    @web.post("/webhook/r0")
     async def post_handler(self, request: Request) -> Response:
         pprint(request)
         return Response(text="501: Not implemented yeeet.\n", status=501)
