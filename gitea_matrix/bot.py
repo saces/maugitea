@@ -111,18 +111,33 @@ class GiteaBot(Plugin):
             msgtype = MessageType.TEXT
 
         try:
+            msg = None
             body = await req.json()
 
             if body["secret"] != self.config["webhook-secret"]:
                 self.log.error("Failed to handle Gitea event: secret doasnt match.")
             else:
-                self.log.error("Failed to handle Gitea event: secret match.")
+                event = req.headers["X-Gitea-Event"]
+                if event == 'push':
+                    commits = body["commits"]
+                    commit_count = len(commits)
+                    if commit_count > 0:
+                        msg = (f"user '{body['pusher']['login']}' pushed "
+                               f"{commit_count} commit(s) to "
+                               f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
+                elif event == 'create':
+                    msg = (f"user '{body['sender']['login']}' created a tag or branch in "
+                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
+                elif event == 'delete':
+                    msg = (f"user '{body['sender']['login']}' deleted a tag or branch in "
+                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
+                else:
+                    self.log.error(f"unhandled hook: {event}")
+                    self.log.error(await req.text())
 
                 room_id = RoomID(req.query["room"])
-
-                event_id = await self.client.send_markdown(room_id, "Hier könnte ihre Werbung stehen",
-                                                                allow_html=True,
-                                                                msgtype=msgtype)
+                if msg:
+                    event_id = await self.client.send_markdown(room_id, msg, allow_html=True, msgtype=msgtype)
 
         except Exception:
             self.log.error("Failed to handle Gitea event", exc_info=True)
