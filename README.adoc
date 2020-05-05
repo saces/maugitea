@@ -1,4 +1,49 @@
-# maugitea
+
+== maugitea
 A Gitea client and webhook receiver for maubot.
 
 Matrix room: #maugitea:saces.de
+
+=== Install & Run
+
+Maubot: For running the maugitea plugin, maubot requires giteapy in env. Add it; or use Docker https://github.com/saces/maubot
+
+maugitea: just a regular plugin, zip it and upload it.
+
+=== Webhooks
+
+url: https://fancy.domain/_matrix/maubot/plugin/<instance_name>/webhook/r0?room=<room-id>
+
+Add the secret to base-config.yaml
+
+ webhook-secret: "your secret here"
+
+=== Bot usage
+
+ Notation: command[abbr, aliases]
+
+Any incomplete command should give help.
+
+ !gitea
+
+Ping the bot
+
+ !gitea ping[p]
+
+==== Server Alias
+
+Note: the url have to be complete for the endpoint, something like 'https://your.git.ea/api/v1' 
+
+ !gitea alias[a]
+ !gitea alias add[a] <alias> <url>
+ !gitea alias remove[r, rm] <alias>
+ !gitea alias list[l, ls]
+
+==== Server
+
+ !gitea server[s]
+ !gitea server list[ls]
+ !gitea server login[l] <url or alias> <token>
+ !gitea server logout[rm] <url or alias>
+
+ !gitea whoami <url or alias>
