@@ -41,6 +41,13 @@ class ServerToken(Base):
     gitea_server = Column(Text, primary_key=True, nullable=False)
     api_token = Column(Text, nullable=False)
 
+class RepositoryAlias(Base):
+    __tablename__ = "repositoryalias"
+
+    user_id: UserID = Column(String(255), primary_key=True)
+    alias = Column(Text, primary_key=True, nullable=False)
+    gitea_repository = Column(Text, primary_key=True)
+
 class Database:
     db: Engine
 
@@ -51,8 +58,8 @@ class Database:
 
     def add_server_alias(self, mxid: UserID, url: str, alias: str) -> None:
         s = self.Session()
-        alias = ServerAlias(user_id=mxid, gitea_server=url, alias=alias)
-        s.add(alias)
+        salias = ServerAlias(user_id=mxid, gitea_server=url, alias=alias)
+        s.add(salias)
         s.commit()
 
     def get_server_aliases(self, user_id: UserID) -> List[AliasInfo]:
@@ -98,3 +105,32 @@ class Database:
         s = self.Session()
         row = s.query(ServerToken).filter(ServerToken.user_id == mxid, ServerToken.gitea_server == url).one()
         return AuthInfo(server=row.gitea_server, api_token=row.api_token)
+
+    def add_repos_alias(self, mxid: UserID, repos: str, alias: str) -> None:
+        s = self.Session()
+        ralias = RepositoryAlias(user_id=mxid, gitea_repository=repos, alias=alias)
+        s.add(ralias)
+        s.commit()
+
+    def get_repos_aliases(self, user_id: UserID) -> List[AliasInfo]:
+        s = self.Session()
+        rows = s.query(RepositoryAlias).filter(RepositoryAlias.user_id == user_id)
+        return [AliasInfo(row.gitea_repository, row.alias) for row in rows]
+
+    def get_repos_alias(self, user_id: UserID, alias: str) -> str:
+        s = self.Session()
+        row = s.query(RepositoryAlias).filter(RepositoryAlias.user_id == user_id, RepositoryAlias.alias == alias).scalar()
+        if row:
+            return row.gitea_repository
+        return None
+
+    def has_repos_alias(self, user_id: UserID, alias: str) -> bool:
+        s: Session = self.Session()
+        return s.query(RepositoryAlias).filter(RepositoryAlias.user_id == user_id, RepositoryAlias.alias == alias).count() > 0
+
+    def rm_repos_alias(self, mxid: UserID, alias: str) -> None:
+        s = self.Session()
+        ralias = s.query(RepositoryAlias).filter(RepositoryAlias.user_id == mxid,
+                                                RepositoryAlias.alias == alias).one()
+        s.delete(ralias)
+        s.commit()

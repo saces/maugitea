@@ -40,6 +40,20 @@ class UrlOrAliasArgument(Argument):
             return " ".join(vals[1:]), serverurl
         return " ".join(vals[1:]), vals[0]
 
+class ReposOrAliasArgument(Argument):
+    def __init__(self, name: str, label: str = None,
+                 *, required: bool = False):
+        super().__init__(name, label=label, required=required, pass_raw=True)
+
+    def match(self, val: str, evt: MessageEvent, instance: 'GiteaBot', **kwargs
+              ) -> Tuple[str, Any]:
+        vals = val.split(" ")
+
+        repos = instance.db.get_repos_alias(evt.sender, vals[0])
+
+        if repos:
+            return " ".join(vals[1:]), repos
+        return " ".join(vals[1:]), vals[0]
 
 Decoratable = Callable[['GiteaBot', MessageEvent, Gtc, Any], Any]
 Decorator = Callable[['GiteaBot', MessageEvent, AuthInfo, Any], Any]

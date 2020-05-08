@@ -170,19 +170,19 @@ class GiteaBot(Plugin):
 
     # endregion
 
-    # region !gitea alias
+    # region !gitea server alias
 
     @gitea.subcommand("alias", aliases=("a",),
                        help="Manage Gitea server aliases.")
     async def alias(self) -> None:
         pass
 
-    @alias.subcommand("add", aliases=("a",), help="Add a alias to a Gitea server.")
+    @alias.subcommand("add", aliases=("a",), help="Add an alias to a Gitea server.")
     @command.argument("alias", "server alias")
     @command.argument("url", "server URL")
     async def alias_add(self, evt: MessageEvent, url: str, alias: str) -> None:
         if self.db.has_server_alias(evt.sender, alias):
-            await evt.reply("Alias already in use.")
+            await evt.reply("Server alias already in use.")
             return
         self.db.add_server_alias(evt.sender, url, alias)
         await evt.reply(f"Added alias {alias} to server {url}")
@@ -191,9 +191,9 @@ class GiteaBot(Plugin):
     async def alias_list(self, evt: MessageEvent) -> None:
         aliases = self.db.get_server_aliases(evt.sender)
         if not aliases:
-            await evt.reply("You don't have any aliases.")
+            await evt.reply("You don't have any server aliases.")
             return
-        msg = ("You have the following aliases:\n\n"
+        msg = ("You have the following server aliases:\n\n"
                + "\n".join(f"+ {alias.alias} → {alias.server}" for alias in aliases))
         await evt.reply(msg)
 
@@ -238,4 +238,40 @@ class GiteaBot(Plugin):
         await evt.reply(f"Removed {url} from the database.")
 
     # endregion
-    
+
+    # region !gitea repository alias
+
+    @gitea.subcommand("ralias", aliases=("r",),
+                       help="Manage Gitea repository aliases.")
+    async def ralias(self) -> None:
+        pass
+
+    @ralias.subcommand("add", aliases=("a",), help="Add an alias to a Gitea repository.")
+    @command.argument("alias", "repository alias")
+    @command.argument("repos", "repository")
+    async def ralias_add(self, evt: MessageEvent, repos: str, alias: str) -> None:
+        if self.db.has_repos_alias(evt.sender, alias):
+            await evt.reply("Repository alias already in use.")
+            return
+        self.db.add_repos_alias(evt.sender, repos, alias)
+        await evt.reply(f"Added alias {alias} to repository {repos}")
+
+    @ralias.subcommand("list", aliases=("l", "ls"), help="Show your Gitea repository aliases.")
+    async def ralias_list(self, evt: MessageEvent) -> None:
+        aliases = self.db.get_repos_aliases(evt.sender)
+        if not aliases:
+            await evt.reply("You don't have any repository aliases.")
+            return
+        msg = ("You have the following repository aliases:\n\n"
+               + "\n".join(f"+ {alias.alias} → {alias.server}" for alias in aliases))
+        await evt.reply(msg)
+
+    @ralias.subcommand("remove", aliases=("r", "rm", "d", "del", "delete"),
+                      help="Remove a alias to a Gitea repository.")
+    @command.argument("alias", "repository alias")
+    async def ralias_rm(self, evt: MessageEvent, alias: str) -> None:
+        self.db.rm_repos_alias(evt.sender, alias)
+        await evt.reply(f"Removed alias {alias}.")
+
+    # endregion
+

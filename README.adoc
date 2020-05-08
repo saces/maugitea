@@ -47,3 +47,10 @@ Note: the url have to be complete for the endpoint, something like 'https://your
  !gitea server logout[rm] <url or alias>
 
  !gitea whoami <url or alias>
+
+==== Repository Alias
+
+ !gitea ralias[r]
+ !gitea ralias add[a] <alias> <repository>
+ !gitea ralias remove[r, rm] <alias>
+ !gitea ralias list[l, ls]
