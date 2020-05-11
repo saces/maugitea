@@ -12,7 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Any, Tuple, Callable
+from typing import Any, Callable, Optional, Tuple
 
 import giteapy
 from giteapy import Configuration as Gtc
@@ -73,3 +73,28 @@ def with_gitea_session(func: Decoratable) -> Decorator:
             await evt.reply("Error.\n\n{0}".format(e))
 
     return wrapper
+
+def sigil_int(val: str) -> int:
+    if len(val) == 0:
+        raise ValueError('No issue ID given')
+    if val[0] == '#':
+        return int(val[1:])
+    return int(val)
+
+def quote_parser(val: str, return_all: bool = False) -> Tuple[str, Optional[str]]:
+    if len(val) == 0:
+        return val, None
+
+    if val[0] in ('"', "'"):
+        try:
+            next_quote = val.index(val[0], 1)
+            return val[next_quote + 1:], val[1:next_quote]
+        except ValueError:
+            pass
+    if return_all:
+        return "", val
+    vals = val.split("\n", 1)
+    if len(vals) == 1:
+        return "", vals[0]
+    else:
+        return vals[1], vals[0]

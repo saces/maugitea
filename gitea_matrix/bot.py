@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import List, Set, Type
+from functools import partial
 
 from aiohttp.web import Response, Request
 import asyncio
@@ -30,7 +31,7 @@ from mautrix.util.config import BaseProxyConfig
 
 from .db import Database
 from .config import Config
-from .util import UrlOrAliasArgument, with_gitea_session
+from .util import ReposOrAliasArgument, sigil_int, quote_parser, UrlOrAliasArgument, with_gitea_session
 
 from pprint import pprint
 
@@ -275,3 +276,111 @@ class GiteaBot(Plugin):
 
     # endregion
 
+    # region !gitea issue
+
+    @gitea.subcommand("issue", aliases=("i",), help="Manage Gitea issues.")
+    async def issue(self) -> None:
+        pass
+
+    @issue.subcommand("read", aliases=("view", "show"), help="Read an issue.")
+    @UrlOrAliasArgument("url", "server URL or alias")
+    @ReposOrAliasArgument("repo", "repository or alias")
+    @command.argument("id", "issue ID", parser=sigil_int)
+    @with_gitea_session
+    async def issue_read(self, evt: MessageEvent, repo: str, id: int, gtc: Gtc) -> None:
+        api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
+        rep = repo.split("/", 1)
+        issue = api_instance.issue_get_issue(rep[0], rep[1], id)
+
+        msg = f"Issue #{issue.id} by {issue.user.login}: [{issue.title}]({issue.html_url})  \n"
+        if issue.assignees:
+            names = [assignee.login for assignee in issue.assignees]
+            if len(names) > 1:
+                msg += f"Assigned to {', '.join(names[:-1])} and {names[-1]}.  \n"
+            elif len(names) == 1:
+                msg += f"Assigned to {names[0]}.  \n"
+        msg += "\n".join(f"> {line}" for line in issue.body.strip().split("\n"))
+
+        await evt.reply(msg)
+
+    @issue.subcommand("create", help="Create an Issue. The issue body can be placed on a new line.")
+    @UrlOrAliasArgument("url", "server URL or alias")
+    @ReposOrAliasArgument("repo", "repository")
+    @command.argument("title", "issue title", pass_raw=True, parser=quote_parser)
+    @command.argument("desc", "issue body", pass_raw=True, required=False,
+                      parser=partial(quote_parser, return_all=True))
+    @with_gitea_session
+    async def issue_create(self, evt: MessageEvent, repo: str, title: str,
+                           desc: str, gtc: Gtc) -> None:
+        api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
+        rep = repo.split("/", 1)
+
+        body = giteapy.CreateIssueOption(title=title, body=desc)
+        issue = api_instance.issue_create_issue(rep[0], rep[1], body=body)
+
+        await evt.reply(f"Created issue [#{issue.id}]({issue.html_url}): {issue.title}")
+
+    @issue.subcommand("close", help="Close an issue.")
+    @UrlOrAliasArgument("url", "server URL or alias")
+    @ReposOrAliasArgument("repo", "repository or alias")
+    @command.argument("id", "issue ID", parser=sigil_int)
+    @with_gitea_session
+    async def issue_close(self, evt: MessageEvent, repo: str, id: str, gtc: Gtc) -> None:
+        api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
+        rep = repo.split("/", 1)
+
+        body = giteapy.EditIssueOption(state='closed')
+        issue = api_instance.issue_edit_issue(rep[0], rep[1], id, body=body)
+
+        await evt.reply(f"Closed issue [#{issue.id}]({issue.html_url}): {issue.title}")
+
+    @issue.subcommand("reopen", help="Reopen an issue.")
+    @UrlOrAliasArgument("url", "server URL or alias")
+    @ReposOrAliasArgument("repo", "repository or alias")
+    @command.argument("id", "issue ID", parser=sigil_int)
+    @with_gitea_session
+    async def issue_reopen(self, evt: MessageEvent, repo: str, id: int, gtc: Gtc) -> None:
+        api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
+        rep = repo.split("/", 1)
+
+        body = giteapy.EditIssueOption(state='open')
+        issue = api_instance.issue_edit_issue(rep[0], rep[1], id, body=body)
+
+        await evt.reply(f"Reopened issue [#{issue.id}]({issue.html_url}): {issue.title}")
+
+    @issue.subcommand("comment", help="Write a commant on an issue.")
+    @UrlOrAliasArgument("url", "server URL or alias")
+    @ReposOrAliasArgument("repo", "repository or alias")
+    @command.argument("id", "issue ID", parser=sigil_int)
+    @command.argument("comment", "comment text", pass_raw=True)
+    @with_gitea_session
+    async def issue_comment(self, evt: MessageEvent, repo: str, id: int, comment: str, gtc: Gtc) -> None:
+        api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
+        rep = repo.split("/", 1)
+
+        body = giteapy.CreateIssueCommentOption(body=comment)
+        issue = api_instance.issue_create_comment(rep[0], rep[1], id, body=body)
+
+        await evt.reply(f"Commented on issue [#{issue.id}]({issue.html_url})")
+
+    @issue.subcommand("comments", aliases=("read-comments",),
+                      help="Read comments on an issue.")
+    @UrlOrAliasArgument("url", "server URL or alias")
+    @ReposOrAliasArgument("repo", "repository or alias")
+    @command.argument("id", "issue ID", parser=sigil_int)
+    @with_gitea_session
+    async def issue_comments_read(self, evt: MessageEvent, repo: str, id: int, gtc: Gtc) -> None:
+        api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
+        rep = repo.split("/", 1)
+
+        issues = api_instance.issue_get_comments(rep[0], rep[1], id)
+
+        def format_note(note) -> str:
+            body = "\n".join(f"> {line}" for line in note.body.split("\n"))
+            date = note.created_at.strftime(self.config["time_format"])
+            author = note.user.login
+            return f"{author} at {date}:\n{body}"
+
+        await evt.reply("\n\n".join(format_note(note) for note in issues))
+
+    # endregion

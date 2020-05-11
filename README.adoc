@@ -18,6 +18,8 @@ Add the secret to base-config.yaml
 
  webhook-secret: "your secret here"
 
+Still a lot to do.
+
 === Bot usage
 
  Notation: command[abbr, aliases]
@@ -54,3 +56,13 @@ Note: the url have to be complete for the endpoint, something like 'https://your
  !gitea ralias add[a] <alias> <repository>
  !gitea ralias remove[r, rm] <alias>
  !gitea ralias list[l, ls]
+
+==== Issues
+
+ !gitea issue[i]
+ !gitea issue read[view, show] <url or alias> <repos or alias> id
+ !gitea issue create <url or alias> <repos or alias> "title" "description"
+ !gitea issue close <url or alias> <repos or alias> id
+ !gitea issue reopen <url or alias> <repos or alias> id
+ !gitea issue comment <url or alias> <repos or alias> id commet text
+ !gitea issue comments[read-comments] <url or alias> <repos or alias> id

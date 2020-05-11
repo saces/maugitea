@@ -1,2 +1,3 @@
 webhook-secret: "sUPERgEHEIM"
 send_as_notice: true
+time_format: "%d.%m.%Y %H:%M:%S %Z"
