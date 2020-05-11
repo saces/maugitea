@@ -6,7 +6,7 @@ Matrix room: #maugitea:saces.de
 
 === Install & Run
 
-Maubot: For running the maugitea plugin, maubot requires giteapy in env. Add it; or use Docker https://github.com/saces/maubot
+Maubot: For running the maugitea plugin, maubot requires giteapy in env. Currently this version is needed: https://github.com/jeblair/giteapy/tree/v1.12.0. Add it; or use Docker https://github.com/saces/maubot
 
 maugitea: just a regular plugin, zip it and upload it.
 
