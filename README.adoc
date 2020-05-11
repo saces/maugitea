@@ -60,9 +60,9 @@ Note: the url have to be complete for the endpoint, something like 'https://your
 ==== Issues
 
  !gitea issue[i]
- !gitea issue read[view, show] <url or alias> <repos or alias> id
- !gitea issue create <url or alias> <repos or alias> "title" "description"
- !gitea issue close <url or alias> <repos or alias> id
- !gitea issue reopen <url or alias> <repos or alias> id
- !gitea issue comment <url or alias> <repos or alias> id commet text
- !gitea issue comments[read-comments] <url or alias> <repos or alias> id
+ !gitea issue read[view, show] <url or alias> <repos or alias> <id>
+ !gitea issue create <url or alias> <repos or alias> <title> <description>
+ !gitea issue close <url or alias> <repos or alias> <id>
+ !gitea issue reopen <url or alias> <repos or alias> <id>
+ !gitea issue comment <url or alias> <repos or alias> <id> <comment text>
+ !gitea issue comments[read-comments] <url or alias> <repos or alias> <id>
