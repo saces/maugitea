@@ -116,14 +116,14 @@ class GiteaBot(Plugin):
             body = await req.json()
 
             if body["secret"] != self.config["webhook-secret"]:
-                self.log.error("Failed to handle Gitea event: secret doasnt match.")
+                self.log.error("Failed to handle Gitea event: secret doesnt match.")
             else:
                 event = req.headers["X-Gitea-Event"]
                 if event == 'push':
                     commits = body["commits"]
                     commit_count = len(commits)
                     if commit_count > 0:
-                        msg = (f"user '{body['pusher']['login']}' pushed "
+                        msg = (f"user '{body['sender']['login']}' pushed "
                                f"{commit_count} commit(s) to "
                                f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
                 elif event == 'create':
@@ -131,6 +131,12 @@ class GiteaBot(Plugin):
                            f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
                 elif event == 'delete':
                     msg = (f"user '{body['sender']['login']}' deleted a tag or branch in "
+                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
+                elif event == 'issues':
+                    msg = (f"user '{body['sender']['login']}' {body['action']} issue #{body['number']} in "
+                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
+                elif event == 'issue_comment':
+                    msg = (f"user '{body['sender']['login']}' {body['action']} a comment on issue #{body['issue']['id']} in "
                            f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
                 else:
                     self.log.error(f"unhandled hook: {event}")
