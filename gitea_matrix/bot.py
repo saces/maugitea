@@ -21,8 +21,8 @@ from asyncio import Task
 
 from yarl import URL
 
-import giteapy
-from giteapy import Configuration as Gtc
+from . import giteapy as giteapy
+from .giteapy import Configuration as Gtc
 
 from maubot import Plugin, MessageEvent
 from maubot.handlers import command, event, web

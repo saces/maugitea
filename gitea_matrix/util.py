@@ -14,9 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Any, Callable, Optional, Tuple
 
-import giteapy
-from giteapy import Configuration as Gtc
-from giteapy.rest import ApiException
+from . import giteapy as giteapy
+from .giteapy import Configuration as Gtc
+from .giteapy.rest import ApiException
 
 from maubot import MessageEvent
 from maubot.handlers.command import Argument
