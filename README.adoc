@@ -2,6 +2,8 @@
 == maugitea
 A Gitea client and webhook receiver for maubot.
 
+WARNING: This bot is still under development, so things may change, break, or even work properly.
+
 Matrix room: #maugitea:saces.de
 
 === Install & Run
